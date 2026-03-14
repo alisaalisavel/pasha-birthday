@@ -1,0 +1,1716 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>С Днём Рождения, Паша! 🎂</title>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #0f0a1e;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+
+        /* ============ SPLASH ============ */
+        #screen-splash {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #1a0533 0%, #4a1080 50%, #1a0533 100%);
+            z-index: 200;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .splash-balloons {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .balloon {
+            position: absolute;
+            bottom: -120px;
+            width: 50px;
+            height: 65px;
+            border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+            animation: floatUp linear infinite;
+        }
+
+        .balloon::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            width: 1px;
+            height: 20px;
+            background: rgba(255,255,255,0.4);
+        }
+
+        @keyframes floatUp {
+            0%   { transform: translateY(0) rotate(-5deg); opacity: 0.8; }
+            50%  { transform: translateY(-50vh) rotate(5deg); opacity: 0.9; }
+            100% { transform: translateY(-115vh) rotate(-5deg); opacity: 0; }
+        }
+
+        .splash-emoji { font-size: clamp(50px, 10vw, 80px); margin-bottom: 10px; animation: bounce 1.2s ease-in-out infinite alternate; display: block; }
+        @keyframes bounce { 0% { transform: translateY(0) rotate(-5deg); } 100% { transform: translateY(-12px) rotate(5deg); } }
+
+        .splash-title {
+            font-size: clamp(32px, 7vw, 62px);
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(255,200,50,0.8), 0 0 40px rgba(255,100,200,0.4);
+            margin-bottom: 6px;
+            animation: titlePulse 2.5s ease-in-out infinite;
+        }
+        @keyframes titlePulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+
+        .splash-name {
+            font-size: clamp(28px, 6vw, 54px);
+            font-weight: 900;
+            color: #ffd700;
+            text-shadow: 0 0 15px rgba(255,215,0,0.8);
+            margin-bottom: 20px;
+        }
+
+        .splash-desc {
+            font-size: clamp(13px, 2.2vw, 17px);
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 36px;
+            max-width: 460px;
+            line-height: 1.6;
+        }
+
+        .btn-start {
+            padding: 16px 56px;
+            font-size: clamp(17px, 2.5vw, 22px);
+            font-weight: 700;
+            color: #1a0533;
+            background: linear-gradient(135deg, #ffd700, #ff9500);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 0 30px rgba(255,215,0,0.5), 0 8px 20px rgba(0,0,0,0.3);
+            animation: btnGlow 2s ease-in-out infinite;
+            transition: transform 0.15s;
+        }
+        @keyframes btnGlow {
+            0%,100% { box-shadow: 0 0 20px rgba(255,215,0,0.5), 0 8px 20px rgba(0,0,0,0.3); }
+            50%      { box-shadow: 0 0 45px rgba(255,215,0,0.9), 0 8px 20px rgba(0,0,0,0.3); }
+        }
+        .btn-start:hover  { transform: scale(1.06); }
+        .btn-start:active { transform: scale(0.96); }
+
+        /* ============ GAME ============ */
+        #screen-game { position: fixed; inset: 0; display: none; }
+
+        #game-canvas { display: block; width: 100%; height: 100%; }
+
+        /* Progress dots */
+        #progress-bar {
+            position: fixed;
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 10;
+        }
+        .gift-dot {
+            width: 17px;
+            height: 17px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.25);
+            border: 2px solid rgba(255,255,255,0.5);
+            transition: background 0.3s, transform 0.3s, border-color 0.3s;
+        }
+        .gift-dot.collected {
+            background: #ffd700;
+            border-color: #ffd700;
+            transform: scale(1.25);
+            box-shadow: 0 0 8px rgba(255,215,0,0.7);
+        }
+
+        /* Mobile joystick */
+        #mobile-controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            z-index: 10;
+        }
+        #joystick-base {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+            border: 2px solid rgba(255,255,255,0.4);
+            position: relative;
+            touch-action: none;
+        }
+        #joystick-thumb {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255,215,0,0.75);
+            border: 2px solid rgba(255,215,0,1);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            transition: box-shadow 0.1s;
+            box-shadow: 0 0 12px rgba(255,215,0,0.5);
+        }
+
+        /* ============ VIDEO POPUP ============ */
+        #screen-video {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.88);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 300;
+            padding: 16px;
+        }
+        .video-container {
+            background: linear-gradient(135deg, #1a0533, #3d0d6b);
+            border-radius: 20px;
+            padding: 22px;
+            max-width: 580px;
+            width: 100%;
+            border: 2px solid rgba(255,215,0,0.45);
+            box-shadow: 0 0 50px rgba(255,215,0,0.25);
+            text-align: center;
+            max-height: 92vh;
+            overflow-y: auto;
+        }
+        .video-from {
+            font-size: 12px;
+            color: rgba(255,255,255,0.55);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 4px;
+        }
+        .video-colleague-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #ffd700;
+            margin-bottom: 14px;
+            text-shadow: 0 0 10px rgba(255,215,0,0.6);
+        }
+        #photo-player {
+            width: 100%;
+            max-width: 380px;
+            max-height: 320px;
+            border-radius: 16px;
+            object-fit: cover;
+            border: 3px solid rgba(255,215,0,0.4);
+            box-shadow: 0 0 24px rgba(255,215,0,0.2);
+            display: block;
+            margin: 0 auto;
+        }
+        .video-wish-text {
+            margin-top: 16px;
+            font-size: clamp(13px, 2.2vw, 15px);
+            color: rgba(255,255,255,0.9);
+            line-height: 1.7;
+            font-style: italic;
+            padding: 0 8px;
+            border-left: 3px solid #ffd700;
+            text-align: left;
+        }
+        .btn-continue {
+            margin-top: 20px;
+            padding: 13px 46px;
+            font-size: 17px;
+            font-weight: 700;
+            color: #1a0533;
+            background: linear-gradient(135deg, #ffd700, #ff9500);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.15s;
+            box-shadow: 0 4px 15px rgba(255,150,0,0.4);
+        }
+        .btn-continue:hover  { transform: scale(1.06); }
+        .btn-continue:active { transform: scale(0.96); }
+
+        /* ============ FINAL SCREEN ============ */
+        #screen-final {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #1a0533, #4a1080, #0a1628);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 400;
+            text-align: center;
+            padding: 24px;
+            overflow: hidden;
+        }
+        #confetti-canvas {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+        .final-content {
+            position: relative;
+            z-index: 10;
+        }
+        .final-emoji {
+            font-size: clamp(55px, 11vw, 90px);
+            display: block;
+            margin-bottom: 16px;
+            animation: bounce 1s ease-in-out infinite alternate;
+        }
+        .final-title {
+            font-size: clamp(28px, 6vw, 56px);
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(255,200,50,0.8);
+            margin-bottom: 8px;
+        }
+        .final-subtitle {
+            font-size: clamp(16px, 3vw, 26px);
+            color: #ffd700;
+            margin-bottom: 16px;
+        }
+        .final-message {
+            font-size: clamp(13px, 1.8vw, 16px);
+            color: rgba(255,255,255,0.85);
+            max-width: 560px;
+            line-height: 1.75;
+            margin: 0 auto 28px auto;
+            text-align: center;
+        }
+        .colleague-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        .colleague-chip {
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,215,0,0.45);
+            border-radius: 20px;
+            padding: 6px 14px;
+            color: #fff;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.15s, border-color 0.2s;
+        }
+        .colleague-chip:hover {
+            background: rgba(255,215,0,0.25);
+            border-color: #ffd700;
+            transform: scale(1.08);
+        }
+        .colleague-chip:active {
+            transform: scale(0.97);
+        }
+
+        /* ============ GAME OVER ============ */
+        #screen-gameover {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.82);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 350;
+            text-align: center;
+            padding: 24px;
+        }
+        .gameover-box {
+            background: linear-gradient(135deg, #2d0a0a, #6b1515);
+            border: 2px solid rgba(255,80,80,0.6);
+            border-radius: 24px;
+            padding: 40px 50px;
+            max-width: 440px;
+            width: 100%;
+            box-shadow: 0 0 50px rgba(255,60,60,0.3);
+        }
+        .gameover-emoji { font-size: 64px; display: block; margin-bottom: 12px; animation: shake 0.5s ease-in-out infinite alternate; }
+        @keyframes shake { 0% { transform: rotate(-8deg); } 100% { transform: rotate(8deg); } }
+        .gameover-title {
+            font-size: clamp(24px, 5vw, 36px);
+            font-weight: 900;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+        .gameover-sub {
+            font-size: clamp(14px, 2.5vw, 17px);
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 28px;
+            line-height: 1.5;
+        }
+        .btn-restart {
+            padding: 14px 44px;
+            font-size: 17px;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(135deg, #e53935, #b71c1c);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.15s;
+            box-shadow: 0 4px 15px rgba(200,30,30,0.5);
+        }
+        .btn-restart:hover  { transform: scale(1.06); }
+        .btn-restart:active { transform: scale(0.96); }
+    </style>
+</head>
+<body>
+
+<!-- ============ SPLASH ============ -->
+<div id="screen-splash">
+    <div class="splash-balloons" id="balloons-container"></div>
+    <span class="splash-emoji">🎂</span>
+    <div class="splash-title">С Днём Рождения,</div>
+    <div class="splash-name">Паша!</div>
+    <div class="splash-desc">
+        Коллеги приготовили <strong>9 подарков</strong>.<br>
+        Управляй стрелками на клавиатуре (или джойстиком на экране)<br>
+        и собери их все!
+    </div>
+    <button class="btn-start" onclick="startGame()">🎮 Начать игру!</button>
+</div>
+
+<!-- ============ GAME ============ -->
+<div id="screen-game">
+    <canvas id="game-canvas"></canvas>
+    <div id="progress-bar"></div>
+    <div id="mobile-controls">
+        <div id="joystick-base">
+            <div id="joystick-thumb"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ============ VIDEO POPUP ============ -->
+<div id="screen-video">
+    <div class="video-container">
+        <div class="video-from">Подарок от</div>
+        <div class="video-colleague-name" id="colleague-name"></div>
+        <img id="photo-player" src="" alt="фото коллеги" />
+        <div class="video-wish-text" id="wish-text"></div>
+        <button class="btn-continue" onclick="continueGame()">Продолжить 🎁</button>
+    </div>
+</div>
+
+<!-- ============ FINAL SCREEN ============ -->
+<div id="screen-final">
+    <canvas id="confetti-canvas"></canvas>
+    <div class="final-content">
+        <span class="final-emoji">🎉</span>
+        <div class="final-title">С Днём Рождения, Паша!</div>
+        <div class="final-subtitle">Ты собрал все 9 подарков! 🎁</div>
+        <div class="final-message">
+            Вся наша команда желает тебе здоровья, счастья и неиссякаемой энергии. Пусть этот год будет полон ярких побед и незабываемых моментов!
+        </div>
+        <div class="colleague-chips" id="colleague-chips"></div>
+    </div>
+</div>
+
+<!-- ============ GAME OVER ============ -->
+<div id="screen-gameover">
+    <div class="gameover-box">
+        <span class="gameover-emoji">😵</span>
+        <div class="gameover-title">Офис взял своё!</div>
+        <div class="gameover-sub">Дедлайны, встречи и летающие стулья победили.<br>Но коллеги ждут — попробуй ещё раз!</div>
+        <button class="btn-restart" onclick="restartGame()">🔄 Попробовать снова</button>
+    </div>
+</div>
+
+<!-- Background music — положи файл в assets/music.mp3 -->
+<audio id="bg-music" src="assets/music.mp3" loop></audio>
+
+<script>
+// ============================================================
+// ДАННЫЕ: 9 пожеланий от коллег
+// Замени имена коллег на настоящие!
+// ============================================================
+const GIFTS_DATA = [
+    { colleague: "Диана",   photo: "assets/photo1.jpg", wish: "Паша, поздравляю тебя с днем рождения! Желаю, чтобы все твои мечты со временем перестали быть просто планами и стали частью твоей реальной жизни. Пусть у тебя всегда остается время и ресурс на то, что по-настоящему зажигает тебя вне работы. Желаю тебе здоровья, стальных нервов и только крутых поворотов судьбы в сторону успеха. Оставайся таким же профи, с которым нам по-настоящему комфортно двигаться вперед. И самое главное — я хочу пожелать тебе счастья. Именно того счастья, которое видишь для себя ты сам. Оно может казаться «неправильным» для кого-то другого, но это совершенно неважно. Главное, чтобы оно было правильным для тебя и освещало твой личный путь в жизни. С днем рождения!" },
+    { colleague: "Алина",   photo: "assets/photo2.jpg", wish: "Ты тот самый руководитель, после встречи с которым хочется не уволиться, а наоборот — работать ещё лучше. Это дорогого стоит, поверь. Желаю тебе в этот день максимум приятных сюрпризов, ноль дедлайнов и бесконечное количество поводов для радости. С днём рождения!" },
+    { colleague: "Катя",    photo: "assets/photo3.jpg", wish: "Паша, ты — пример для всей команды! Желаю тебе в этот день особенного тепла, искренних улыбок и только хороших новостей. Пусть каждый день дарит новые поводы для радости! 🌟" },
+    { colleague: "Галя",    photo: "assets/photo4.jpg", wish: "Паша, пусть твоя жизнь будет как идеальное путешествие: минимум пересадок, максимум впечатлений, отличная компания и всегда место у окна!" },
+    { colleague: "Дана",    photo: "assets/photo5.jpg", wish: "Доброго времени суток, Павел. Поздравляю Вас с днем вашего рождения! Хочу утвердить Ваше интересное личностное ядро, что выделяет на фоне людей, как бы выковывая социальную позицию, как крутого моложавого человека с харизмой и приятным теплым вайбом — персонаж «безумного ученого» в положительной форме так и вырисовывается в голове, мне кажется, не только у меня. Надеюсь, что Вы сможете сохранить в себе эту уникальность, как и физическое здоровье, которое даст Вам возможность продолжать познавать мир со всем искренним интересом." },
+    { colleague: "Миша",    photo: "assets/photo6.jpg", wish: "С днём рождения! Желаем, чтобы проекты закрывались вовремя, команда всегда была на одной волне, а совмещать роли project-менеджера и руководителя получалось так же легко, как ставить задачи в понедельник утром. Успехов, энергии и больших побед!" },
+    { colleague: "Жулдыз",  photo: "assets/photo7.jpg", wish: "С днём рождения Паша! Пусть работа радует, мечты сбываются, а жизнь будет яркой и счастливой!" },
+    { colleague: "Алиса",   photo: "assets/photo8.jpg", wish: "Паша, поздравляю тебя с днем рождения! Ты очень классный руководитель, с которым понимаешь, что любую задачу можно решить. За все время, что ты наш руководитель, у нас упростилось огромное количество задач и рабочих процессов. С таким руководителем действительно хочется к чему-то стремиться и развиваться. Очень здорово, что ты всегда с нами на одной волне. Ты собрал отличную команду и всегда поддержишь любой наш кипиш. Как человек — ты очень интересный и многогранный, со своим классным стилем. Но самое ценное, что я для себя отметила — это твое очень лояльное, внимательное и понимающее отношение ко всем. Ты по-настоящему добрый и очень классный человек. Желаю тебе побольше путешествий, посетить все места, о которых ты мечтаешь. Ну и так, в догонку — можно еще и на Эверест забраться, если вдруг будет свободный выходной 😄 Счастья тебе в личной жизни, побольше добрых и интересных людей рядом — таких же, как ты. Happy Birthday!" },
+    { colleague: "Алексей", photo: "assets/photo9.jpg", wish: "С днём рождения, мирного неба, оптимизма, веры в себя и свои возможности, долгих лет наполненных жизнью, кучи новых увлечений и посещения новых, ещё не изведанных, мест!" }
+];
+
+// ============================================================
+// GAME VARIABLES
+// ============================================================
+const canvas  = document.getElementById('game-canvas');
+const ctx     = canvas.getContext('2d');
+
+const bgImage = new Image();
+let bgLoaded = false;
+bgImage.onload = () => { bgLoaded = true; };
+bgImage.src = 'assets/bg.jpg';
+
+// Иконки препятствий
+const iconExcel  = new Image(); iconExcel.src  = 'assets/excel.png';
+const iconClaude = new Image(); iconClaude.src = 'assets/claude.png';
+const iconGpt    = new Image(); iconGpt.src    = 'assets/gpt.png';
+
+let W, H;
+const CHAR_SPEED  = 4;
+const CHAR_W      = 64;
+const CHAR_H      = 100;
+const GIFT_RADIUS = 26;
+
+let char = { x: 200, y: 200, vx: 0, vy: 0, animFrame: 0, animTimer: 0 };
+let currentGift  = null;
+let giftIndex    = 0;
+let gameRunning  = false;
+let keys         = {};
+let particles    = [];
+let bgStars      = [];
+let confettiParts = [];
+
+// Жизни и стулья
+const MAX_LIVES      = 5;
+let lives            = MAX_LIVES;
+let invincible       = 0;       // кадры неуязвимости после удара
+const INVINCIBLE_FRAMES = 120;  // ~2 сек
+let hitFlash         = 0;       // кадры красной вспышки экрана
+let speechBubbles    = [];      // реплики офисников
+let obstacles        = [];
+
+// Зомби-офисник (появляется после 6-го подарка)
+let zombie  = null;
+let zombie2 = null;
+const ZOMBIE_SPEED   = 1.4;
+const ZOMBIE2_SPEED  = 1.6;
+const ZOMBIE_RADIUS  = 36;
+
+// Что появляется после каждого подарка (индекс = номер подарка)
+const OBSTACLE_SCHEDULE = {
+    1: 'chair',
+    2: 'claude',
+    3: 'excel',
+    4: 'gpt'
+};
+
+const pashaPic   = new Image();
+let pashaPicLoaded = false;
+
+// ============================================================
+// SETUP
+// ============================================================
+function initCanvas() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    generateStars();
+}
+
+function generateStars() {
+    bgStars = [];
+    for (let i = 0; i < 90; i++) {
+        bgStars.push({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            r: Math.random() * 1.8 + 0.4,
+            a: Math.random(),
+            speed: Math.random() * 0.012 + 0.004
+        });
+    }
+}
+
+function buildProgressBar() {
+    const bar = document.getElementById('progress-bar');
+    bar.innerHTML = '';
+    for (let i = 0; i < 9; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'gift-dot';
+        dot.id = `dot-${i}`;
+        bar.appendChild(dot);
+    }
+}
+
+function addObstacle(type) {
+    const speed = 2.2 + Math.random() * 1.5;
+    const angle = Math.random() * Math.PI * 2;
+    let ox, oy, attempts = 0;
+    do {
+        ox = 80 + Math.random() * (W - 160);
+        oy = 80 + Math.random() * (H - 160);
+        attempts++;
+    } while (attempts < 30 && Math.hypot(ox - char.x, oy - char.y) < 220);
+
+    obstacles.push({
+        type,
+        x: ox, y: oy,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        rot:  Math.random() * Math.PI * 2,
+        rotV: (Math.random() - 0.5) * 0.07
+    });
+}
+
+function spawnZombie() {
+    // Появляется из угла подальше от Паши
+    const corners = [
+        { x: 80,     y: 80 },
+        { x: W - 80, y: 80 },
+        { x: 80,     y: H - 80 },
+        { x: W - 80, y: H - 80 }
+    ];
+    corners.sort((a, b) =>
+        Math.hypot(b.x - char.x, b.y - char.y) - Math.hypot(a.x - char.x, a.y - char.y)
+    );
+    zombie = { x: corners[0].x, y: corners[0].y, animFrame: 0, animTimer: 0,
+               phrase: PHRASES[0], phraseTimer: 180, phraseIdx: 0, phraseAlpha: 1 };
+}
+
+function spawnZombie2() {
+    // Из противоположного угла от zombie
+    const corners = [
+        { x: 80,     y: 80 },
+        { x: W - 80, y: 80 },
+        { x: 80,     y: H - 80 },
+        { x: W - 80, y: H - 80 }
+    ];
+    corners.sort((a, b) =>
+        Math.hypot(b.x - char.x, b.y - char.y) - Math.hypot(a.x - char.x, a.y - char.y)
+    );
+    // Берём второй по удалённости угол (не тот же что zombie)
+    zombie2 = { x: corners[1].x, y: corners[1].y, animFrame: 0, animTimer: 0,
+                phrase: PHRASES[1 % PHRASES.length], phraseTimer: 240, phraseIdx: 1, phraseAlpha: 1 };
+}
+
+function loseLife() {
+    lives--;
+    invincible = INVINCIBLE_FRAMES;
+    hitFlash   = 18; // ~0.3 сек красного оверлея
+    if (lives <= 0) {
+        lives = 0;
+        gameRunning = false;
+        setTimeout(showGameOver, 400);
+    }
+}
+
+function showGameOver() {
+    document.getElementById('screen-gameover').style.display = 'flex';
+}
+
+function restartGame() {
+    document.getElementById('screen-gameover').style.display = 'none';
+    lives      = MAX_LIVES;
+    giftIndex  = 0;
+    invincible = 0;
+    particles  = [];
+    obstacles  = [];
+    zombie     = null;
+    zombie2    = null;
+    char.x = W / 2;
+    char.y = H / 2;
+    char.animFrame = 0;
+    char.animTimer = 0;
+    document.querySelectorAll('.gift-dot').forEach(d => d.classList.remove('collected'));
+    spawnGift();
+    gameRunning = true;
+    requestAnimationFrame(gameLoop);
+}
+
+function spawnGift() {
+    const margin = 90;
+    // Keep away from character
+    let gx, gy, attempts = 0;
+    do {
+        gx = margin + Math.random() * (W - margin * 2);
+        gy = margin + Math.random() * (H - margin * 2);
+        attempts++;
+    } while (attempts < 20 && Math.hypot(gx - char.x, gy - char.y) < 150);
+
+    currentGift = { x: gx, y: gy, bounce: 0 };
+}
+
+// ============================================================
+// SCREENS
+// ============================================================
+function startGame() {
+    document.getElementById('screen-splash').style.display = 'none';
+    document.getElementById('screen-game').style.display   = 'block';
+
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+        document.getElementById('mobile-controls').style.display = 'block';
+    }
+
+    initCanvas();
+    buildProgressBar();
+
+    pashaPic.onload = () => { pashaPicLoaded = true; };
+    pashaPic.src = 'assets/pasha.jpg';
+
+    char.x = W / 2;
+    char.y = H / 2;
+
+    lives      = MAX_LIVES;
+    invincible = 0;
+    obstacles  = [];
+    spawnGift();
+    gameRunning = true;
+
+    const music = document.getElementById('bg-music');
+    music.volume = 0.35;
+    music.play().catch(() => {});
+
+    requestAnimationFrame(gameLoop);
+}
+
+function replayFromFinal(idx) {
+    // Скрываем финальный экран чтобы попап был поверх
+    document.getElementById('screen-final').style.display = 'none';
+    document.getElementById('screen-video').dataset.fromFinal = '1';
+    showVideoPopup(idx);
+}
+
+function showVideoPopup(idx) {
+    gameRunning = false;
+    const data = GIFTS_DATA[idx];
+
+    document.getElementById('colleague-name').textContent = data.colleague;
+    document.getElementById('wish-text').textContent      = data.wish;
+
+    const img = document.getElementById('photo-player');
+    img.src = data.photo;
+
+    document.getElementById('screen-video').style.display = 'flex';
+}
+
+function continueGame() {
+    const screenVid = document.getElementById('screen-video');
+    const fromFinal = screenVid.dataset.fromFinal === '1';
+    document.getElementById('photo-player').src = '';
+    screenVid.style.display   = 'none';
+    screenVid.dataset.fromFinal = '';
+
+    if (fromFinal) {
+        // Вернуться на финальный экран
+        document.getElementById('screen-final').style.display = 'flex';
+        return;
+    }
+
+    const dot = document.getElementById(`dot-${giftIndex}`);
+    if (dot) dot.classList.add('collected');
+
+    giftIndex++;
+
+    // Добавляем новое препятствие по расписанию
+    if (OBSTACLE_SCHEDULE[giftIndex]) {
+        addObstacle(OBSTACLE_SCHEDULE[giftIndex]);
+    }
+
+    // После 6-го подарка появляется зомби-офисник
+    if (giftIndex === 6 && !zombie)  spawnZombie();
+    if (giftIndex === 8 && !zombie2) spawnZombie2();
+
+    if (giftIndex >= 9) {
+        showFinalScreen();
+    } else {
+        spawnGift();
+        gameRunning = true;
+        requestAnimationFrame(gameLoop);
+    }
+}
+
+function showFinalScreen() {
+    document.getElementById('screen-game').style.display  = 'none';
+    const finalEl = document.getElementById('screen-final');
+    finalEl.style.display = 'flex';
+
+    const chips = document.getElementById('colleague-chips');
+    chips.innerHTML = '';
+    GIFTS_DATA.forEach((d, i) => {
+        const c = document.createElement('div');
+        c.className   = 'colleague-chip';
+        c.textContent = `🎁 ${d.colleague}`;
+        c.title       = 'Посмотреть поздравление';
+        c.onclick     = () => replayFromFinal(i);
+        chips.appendChild(c);
+    });
+
+    const cc = document.getElementById('confetti-canvas');
+    cc.width  = window.innerWidth;
+    cc.height = window.innerHeight;
+    initConfetti(cc);
+    animateConfetti(cc.getContext('2d'), cc);
+}
+
+// ============================================================
+// CONFETTI
+// ============================================================
+function initConfetti(cc) {
+    confettiParts = [];
+    const colors = ['#ff6b6b','#ffd700','#a8e063','#4ecdc4','#ff9ff3','#fff','#ff9500','#74b9ff'];
+    for (let i = 0; i < 160; i++) {
+        confettiParts.push({
+            x:  Math.random() * cc.width,
+            y:  Math.random() * cc.height - cc.height,
+            w:  Math.random() * 10 + 4,
+            h:  Math.random() * 6 + 3,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            vx: (Math.random() - 0.5) * 3,
+            vy: Math.random() * 3 + 1.5,
+            angle: Math.random() * Math.PI * 2,
+            av:    (Math.random() - 0.5) * 0.14
+        });
+    }
+}
+
+function animateConfetti(cctx, cc) {
+    cctx.clearRect(0, 0, cc.width, cc.height);
+    confettiParts.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.angle += p.av;
+        if (p.y > cc.height + 10) {
+            p.y = -10;
+            p.x = Math.random() * cc.width;
+        }
+        cctx.save();
+        cctx.translate(p.x, p.y);
+        cctx.rotate(p.angle);
+        cctx.fillStyle = p.color;
+        cctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        cctx.restore();
+    });
+    requestAnimationFrame(() => animateConfetti(cctx, cc));
+}
+
+// ============================================================
+// GAME LOOP
+// ============================================================
+function gameLoop() {
+    if (!gameRunning) return;
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+function update() {
+    char.vx = 0;
+    char.vy = 0;
+    if (keys['ArrowLeft']  || keys['KeyA']) char.vx = -CHAR_SPEED;
+    if (keys['ArrowRight'] || keys['KeyD']) char.vx =  CHAR_SPEED;
+    if (keys['ArrowUp']    || keys['KeyW']) char.vy = -CHAR_SPEED;
+    if (keys['ArrowDown']  || keys['KeyS']) char.vy =  CHAR_SPEED;
+
+    // Normalize diagonal movement
+    if (char.vx !== 0 && char.vy !== 0) {
+        char.vx *= 0.7071;
+        char.vy *= 0.7071;
+    }
+
+    char.x = Math.max(CHAR_W / 2 + 4, Math.min(W - CHAR_W / 2 - 4, char.x + char.vx));
+    char.y = Math.max(CHAR_H / 2 + 4, Math.min(H - CHAR_H / 2 - 4, char.y + char.vy));
+
+    const moving = char.vx !== 0 || char.vy !== 0;
+    if (moving) {
+        char.animTimer++;
+        if (char.animTimer > 9) { char.animTimer = 0; char.animFrame = (char.animFrame + 1) % 4; }
+    } else {
+        char.animFrame = 0; char.animTimer = 0;
+    }
+
+    bgStars.forEach(s => { s.a += s.speed; if (s.a > 1) s.a = 0; });
+
+    if (currentGift) currentGift.bounce += 0.06;
+
+    // Particle physics
+    particles = particles.filter(p => p.life > 0);
+    particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life -= 2.5; });
+
+    // Collision: подарок
+    if (currentGift) {
+        const dx  = char.x - currentGift.x;
+        const dy  = (char.y - CHAR_H / 2 + 14) - currentGift.y;
+        const hit = Math.hypot(dx, dy) < GIFT_RADIUS + CHAR_W / 2 - 8;
+        if (hit) collectGift();
+    }
+
+    // Стулья: движение + отскок + коллизия с персонажем
+    if (invincible > 0) invincible--;
+    if (hitFlash   > 0) hitFlash--;
+    // Обновляем реплики зомби (таймер смены фразы)
+    if (zombie)  { zombie.phraseTimer--;  if (zombie.phraseTimer  <= 0) nextZombiePhrase(zombie,  0); }
+    if (zombie2) { zombie2.phraseTimer--; if (zombie2.phraseTimer <= 0) nextZombiePhrase(zombie2, 1); }
+
+    obstacles.forEach(o => {
+        o.x   += o.vx;
+        o.y   += o.vy;
+        o.rot += o.rotV;
+
+        if (o.x < 35)      { o.vx =  Math.abs(o.vx); }
+        if (o.x > W - 35)  { o.vx = -Math.abs(o.vx); }
+        if (o.y < 35)      { o.vy =  Math.abs(o.vy); }
+        if (o.y > H - 35)  { o.vy = -Math.abs(o.vy); }
+
+        if (invincible <= 0) {
+            const dx = char.x - o.x;
+            const dy = (char.y - CHAR_H / 4) - o.y;
+            if (Math.hypot(dx, dy) < 48) {
+                loseLife();
+            }
+        }
+    });
+
+    // Зомби — медленно ползёт к Паше
+    if (zombie) {
+        const dx = char.x - zombie.x;
+        const dy = char.y - zombie.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 1) {
+            zombie.x += (dx / dist) * ZOMBIE_SPEED;
+            zombie.y += (dy / dist) * ZOMBIE_SPEED;
+        }
+
+        // Анимация шага
+        zombie.animTimer++;
+        if (zombie.animTimer > 14) {
+            zombie.animTimer = 0;
+            zombie.animFrame = (zombie.animFrame + 1) % 4;
+        }
+
+        // Коллизия с Пашей
+        if (invincible <= 0 && dist < ZOMBIE_RADIUS + CHAR_W / 2) {
+            loseLife();
+        }
+    }
+
+    // Второй офисник — чуть быстрее
+    if (zombie2) {
+        const dx = char.x - zombie2.x;
+        const dy = char.y - zombie2.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 1) {
+            zombie2.x += (dx / dist) * ZOMBIE2_SPEED;
+            zombie2.y += (dy / dist) * ZOMBIE2_SPEED;
+        }
+        zombie2.animTimer = (zombie2.animTimer || 0) + 1;
+        if (zombie2.animTimer > 12) {
+            zombie2.animTimer = 0;
+            zombie2.animFrame = (zombie2.animFrame + 1) % 4;
+        }
+        if (invincible <= 0 && dist < ZOMBIE_RADIUS + CHAR_W / 2) {
+            loseLife();
+        }
+    }
+}
+
+function collectGift() {
+    const gx = currentGift.x;
+    const gy = currentGift.y;
+    const colors = ['#ffd700','#ff6b6b','#4ecdc4','#a8e063','#ff9ff3','#fff','#ff9500'];
+    // Взрыв конфетти — 50 частиц в случайных направлениях
+    for (let i = 0; i < 50; i++) {
+        const angle  = Math.random() * Math.PI * 2;
+        const speed  = Math.random() * 8 + 2;
+        particles.push({
+            x: gx, y: gy,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - Math.random() * 4,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            size: Math.random() * 5 + 3,
+            life: 110 + Math.random() * 40
+        });
+    }
+    currentGift = null;
+    showVideoPopup(giftIndex);
+}
+
+// ============================================================
+// DRAW
+// ============================================================
+function draw() {
+    // Background image
+    if (bgLoaded) {
+        // Cover the canvas preserving aspect ratio
+        const scale = Math.max(W / bgImage.width, H / bgImage.height);
+        const bw = bgImage.width * scale;
+        const bh = bgImage.height * scale;
+        const bx = (W - bw) / 2;
+        const by = (H - bh) / 2;
+        ctx.drawImage(bgImage, bx, by, bw, bh);
+    } else {
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(0, 0, W, H);
+    }
+
+    // Dark overlay so game elements are readable
+    ctx.fillStyle = 'rgba(10, 5, 30, 0.18)';
+    ctx.fillRect(0, 0, W, H);
+
+    // Gift
+    if (currentGift) drawGift(currentGift);
+
+    // Препятствия
+    obstacles.forEach(o => drawObstacle(o));
+
+    // Зомби-офисник
+    if (zombie)  drawZombie(zombie);
+    if (zombie2) drawZombie2(zombie2);
+
+    // Пузыри над зомби
+    if (zombie  && zombie.phrase)  drawZombieBubble(zombie.x,  zombie.y,  zombie.phrase,  zombie.phraseAlpha);
+    if (zombie2 && zombie2.phrase) drawZombieBubble(zombie2.x, zombie2.y, zombie2.phrase, zombie2.phraseAlpha);
+
+    // Particles
+    particles.forEach(p => {
+        const alpha = Math.floor(Math.min(p.life, 100) * 2.55).toString(16).padStart(2, '0');
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size || 4, 0, Math.PI * 2);
+        ctx.fillStyle = p.color + alpha;
+        ctx.fill();
+    });
+
+    // Персонаж: мигает при неуязвимости (каждые 6 кадров пропускаем)
+    const shouldFlash = invincible > 0 && Math.floor(invincible / 6) % 2 === 0;
+    if (!shouldFlash) {
+        drawCharacter(char.x, char.y, char.animFrame);
+    }
+
+
+    // Красный оверлей при ударе
+    if (hitFlash > 0) {
+        const alpha = (hitFlash / 18) * 0.45;
+        ctx.fillStyle = `rgba(220, 0, 0, ${alpha})`;
+        ctx.fillRect(0, 0, W, H);
+    }
+
+    // Жизни (сердечки) — левый верхний угол
+    drawLives();
+}
+
+function drawLives() {
+    const isMobile  = window.innerWidth < 600;
+    const heartSize = isMobile ? 24 : 26;
+    const totalW    = MAX_LIVES * (heartSize + 6) - 6;
+    const startX    = isMobile ? (W - totalW) / 2 : 18;
+    const y         = isMobile ? 70 : 44;
+    for (let i = 0; i < MAX_LIVES; i++) {
+        ctx.font = `${heartSize}px Arial`;
+        ctx.textAlign    = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(i < lives ? '❤️' : '🖤', startX + i * (heartSize + 6), y);
+    }
+}
+
+// Диспетчер — рисует нужный тип препятствия
+function drawObstacle(o) {
+    ctx.save();
+    ctx.translate(o.x, o.y);
+    ctx.rotate(o.rot);
+    switch (o.type) {
+        case 'chair':  drawChairShape();  break;
+        case 'claude': drawClaudeShape(); break;
+        case 'excel':  drawExcelShape();  break;
+        case 'gpt':    drawGptShape();    break;
+    }
+    ctx.restore();
+}
+
+// 🪑 Стул
+function drawChairShape() {
+    const W2 = 28, H2 = 24;
+    ctx.beginPath();
+    ctx.ellipse(0, H2 + 6, W2 * 0.8, 5, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fill();
+
+    ctx.fillStyle = '#6d4c41';
+    ctx.beginPath();
+    ctx.roundRect(-W2, -H2 - 20, W2 * 2, 10, 4);
+    ctx.fill();
+    ctx.fillRect(-W2 + 4, -H2 - 10, 7, 16);
+    ctx.fillRect(W2 - 11, -H2 - 10, 7, 16);
+
+    ctx.fillStyle = '#8d6e63';
+    ctx.beginPath();
+    ctx.roundRect(-W2, -H2, W2 * 2, H2 * 0.7, 5);
+    ctx.fill();
+
+    ctx.fillStyle = '#5d4037';
+    const legH = H2 + 10;
+    ctx.fillRect(-W2 + 2,       -H2 * 0.3, 6, legH);
+    ctx.fillRect( W2 - 8,       -H2 * 0.3, 6, legH);
+    ctx.fillRect(-W2 * 0.5,     -H2 * 0.3, 5, legH - 4);
+    ctx.fillRect( W2 * 0.5 - 5, -H2 * 0.3, 5, legH - 4);
+}
+
+// 🤖 Claude.ai — оранжевый круг с «C»
+// Вспомогательная — рисует иконку по центру (ctx уже перемещён translate)
+function drawIconShape(img, size) {
+    const s = size || 52;
+    if (img.complete && img.naturalWidth > 0) {
+        ctx.drawImage(img, -s / 2, -s / 2, s, s);
+    } else {
+        // Заглушка пока картинка грузится
+        ctx.beginPath();
+        ctx.arc(0, 0, s / 2, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.fill();
+    }
+}
+
+function drawClaudeShape() { drawIconShape(iconClaude, 52); }
+function drawExcelShape()  { drawIconShape(iconExcel,  52); }
+function drawGptShape()    { drawIconShape(iconGpt,    52); }
+
+// 🧟 Зомби-офисник
+function drawZombie(z) {
+    const x = z.x;
+    const y = z.y;
+    const frame = z.animFrame;
+    const legSwing = [0, 9, 0, -9][frame];
+
+    // Тень
+    ctx.beginPath();
+    ctx.ellipse(x, y + 6, 22, 7, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fill();
+
+    // Ноги — тёмные брюки
+    ctx.fillStyle = '#2c2c3a';
+    ctx.beginPath();
+    ctx.roundRect(x - 19, y - 10, 15, 30 + legSwing, [0, 0, 5, 5]);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.roundRect(x + 4,  y - 10, 15, 30 - legSwing, [0, 0, 5, 5]);
+    ctx.fill();
+
+    // Туфли
+    ctx.fillStyle = '#1a1a1a';
+    ctx.beginPath();
+    ctx.roundRect(x - 22, y + 18 + legSwing, 20, 9, [0, 0, 4, 4]);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.roundRect(x + 2,  y + 18 - legSwing, 20, 9, [0, 0, 4, 4]);
+    ctx.fill();
+
+    // Тело — серый пиджак
+    ctx.fillStyle = '#5a6070';
+    ctx.beginPath();
+    ctx.roundRect(x - 25, y - 68, 50, 62, 9);
+    ctx.fill();
+
+    // Воротник рубашки (белый)
+    ctx.fillStyle = '#eaeaea';
+    ctx.beginPath();
+    ctx.moveTo(x - 8, y - 68);
+    ctx.lineTo(x - 14, y - 52);
+    ctx.lineTo(x,      y - 52);
+    ctx.lineTo(x + 14, y - 52);
+    ctx.lineTo(x + 8,  y - 68);
+    ctx.closePath();
+    ctx.fill();
+
+    // Галстук — синий, чуть съехавший
+    ctx.fillStyle = '#1a4fa0';
+    ctx.save();
+    ctx.translate(x + 4, y - 68);
+    ctx.rotate(0.1);
+    ctx.beginPath();
+    ctx.moveTo(-5, 0);
+    ctx.lineTo(-8, 22);
+    ctx.lineTo(0,  38);
+    ctx.lineTo(8,  22);
+    ctx.lineTo(5,  0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // Левая рука — вытянута вперёд
+    ctx.fillStyle = '#5a6070';
+    ctx.save();
+    ctx.translate(x - 25, y - 62);
+    ctx.rotate(-0.85);
+    ctx.beginPath();
+    ctx.roundRect(-6, 0, 13, 40, 6);
+    ctx.fill();
+    // Кисть
+    ctx.fillStyle = '#f0c8a0';
+    ctx.beginPath();
+    ctx.roundRect(-6, 38, 13, 12, 5);
+    ctx.fill();
+    ctx.restore();
+
+    // Правая рука — тоже вперёд
+    ctx.fillStyle = '#5a6070';
+    ctx.save();
+    ctx.translate(x + 25, y - 58);
+    ctx.rotate(0.75);
+    ctx.beginPath();
+    ctx.roundRect(-6, 0, 13, 40, 6);
+    ctx.fill();
+    // Кисть
+    ctx.fillStyle = '#f0c8a0';
+    ctx.beginPath();
+    ctx.roundRect(-6, 38, 13, 12, 5);
+    ctx.fill();
+    ctx.restore();
+
+    // Голова — нормальный цвет кожи
+    ctx.beginPath();
+    ctx.arc(x, y - 94, 27, 0, Math.PI * 2);
+    ctx.fillStyle = '#f0c8a0';
+    ctx.fill();
+
+    // Волосы — тёмные, аккуратные но чуть взъерошенные
+    ctx.fillStyle = '#3a2810';
+    ctx.beginPath();
+    ctx.ellipse(x, y - 117, 27, 12, 0, Math.PI, Math.PI * 2);
+    ctx.fill();
+    // Вихор
+    ctx.beginPath();
+    ctx.ellipse(x + 14, y - 118, 8, 5, 0.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Очки (офисный работник)
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(x - 22, y - 102, 17, 13, 3);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.roundRect(x + 5, y - 102, 17, 13, 3);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x - 5, y - 95);
+    ctx.lineTo(x + 5, y - 95);
+    ctx.stroke();
+
+    // Глаза — пустые, усталые
+    ctx.fillStyle = '#555';
+    ctx.beginPath();
+    ctx.arc(x - 13, y - 96, 3.5, 0, Math.PI * 2);
+    ctx.arc(x + 13, y - 96, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    // Тёмные круги
+    ctx.strokeStyle = 'rgba(80,40,40,0.5)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(x - 13, y - 93, 4, 0, Math.PI);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x + 13, y - 93, 4, 0, Math.PI);
+    ctx.stroke();
+
+    // Рот — прямая линия (выражение «всё равно»)
+    ctx.strokeStyle = '#8a5a3a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x - 8, y - 80);
+    ctx.lineTo(x + 8, y - 80);
+    ctx.stroke();
+
+}
+
+// Второй офисник — рыжий, бежевый пиджак, без очков
+function drawZombie2(z) {
+    const x = z.x;
+    const y = z.y;
+    const legSwing = [0, 9, 0, -9][z.animFrame];
+
+    // Тень
+    ctx.beginPath();
+    ctx.ellipse(x, y + 6, 22, 7, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fill();
+
+    // Ноги — синие брюки
+    ctx.fillStyle = '#2a3560';
+    ctx.beginPath();
+    ctx.roundRect(x - 19, y - 10, 15, 30 + legSwing, [0, 0, 5, 5]);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.roundRect(x + 4,  y - 10, 15, 30 - legSwing, [0, 0, 5, 5]);
+    ctx.fill();
+
+    // Туфли
+    ctx.fillStyle = '#3a2a1a';
+    ctx.beginPath();
+    ctx.roundRect(x - 22, y + 18 + legSwing, 20, 9, [0, 0, 4, 4]);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.roundRect(x + 2,  y + 18 - legSwing, 20, 9, [0, 0, 4, 4]);
+    ctx.fill();
+
+    // Тело — бежевый пиджак
+    ctx.fillStyle = '#c8a870';
+    ctx.beginPath();
+    ctx.roundRect(x - 25, y - 68, 50, 62, 9);
+    ctx.fill();
+
+    // Воротник рубашки
+    ctx.fillStyle = '#eaeaea';
+    ctx.beginPath();
+    ctx.moveTo(x - 8, y - 68);
+    ctx.lineTo(x - 14, y - 52);
+    ctx.lineTo(x,      y - 52);
+    ctx.lineTo(x + 14, y - 52);
+    ctx.lineTo(x + 8,  y - 68);
+    ctx.closePath();
+    ctx.fill();
+
+    // Галстук — красный
+    ctx.fillStyle = '#cc1a1a';
+    ctx.save();
+    ctx.translate(x - 3, y - 68);
+    ctx.rotate(-0.08);
+    ctx.beginPath();
+    ctx.moveTo(-5, 0);
+    ctx.lineTo(-8, 22);
+    ctx.lineTo(0,  38);
+    ctx.lineTo(8,  22);
+    ctx.lineTo(5,  0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // Левая рука
+    ctx.fillStyle = '#c8a870';
+    ctx.save();
+    ctx.translate(x - 25, y - 62);
+    ctx.rotate(-0.85);
+    ctx.beginPath();
+    ctx.roundRect(-6, 0, 13, 40, 6);
+    ctx.fill();
+    ctx.fillStyle = '#f0c8a0';
+    ctx.beginPath();
+    ctx.roundRect(-6, 38, 13, 12, 5);
+    ctx.fill();
+    ctx.restore();
+
+    // Правая рука
+    ctx.fillStyle = '#c8a870';
+    ctx.save();
+    ctx.translate(x + 25, y - 58);
+    ctx.rotate(0.75);
+    ctx.beginPath();
+    ctx.roundRect(-6, 0, 13, 40, 6);
+    ctx.fill();
+    ctx.fillStyle = '#f0c8a0';
+    ctx.beginPath();
+    ctx.roundRect(-6, 38, 13, 12, 5);
+    ctx.fill();
+    ctx.restore();
+
+    // Голова
+    ctx.beginPath();
+    ctx.arc(x, y - 94, 27, 0, Math.PI * 2);
+    ctx.fillStyle = '#f5d0a0';
+    ctx.fill();
+
+    // Рыжие волосы
+    ctx.fillStyle = '#c05a10';
+    ctx.beginPath();
+    ctx.ellipse(x, y - 117, 27, 12, 0, Math.PI, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(x - 20, y - 110, 8, 12, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(x + 20, y - 110, 8, 12, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Глаза — широко открытые (испуганный вид)
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.ellipse(x - 11, y - 97, 6, 7, 0, 0, Math.PI * 2);
+    ctx.ellipse(x + 11, y - 97, 6, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#2a5a9a';
+    ctx.beginPath();
+    ctx.arc(x - 11, y - 97, 3.5, 0, Math.PI * 2);
+    ctx.arc(x + 11, y - 97, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Брови — нахмуренные
+    ctx.strokeStyle = '#8a4a10';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(x - 17, y - 107);
+    ctx.lineTo(x - 5,  y - 104);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x + 17, y - 107);
+    ctx.lineTo(x + 5,  y - 104);
+    ctx.stroke();
+
+    // Рот — открытый (O-образный)
+    ctx.fillStyle = '#8a4a3a';
+    ctx.beginPath();
+    ctx.ellipse(x, y - 82, 6, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+}
+
+function drawGift(g) {
+    const x = g.x;
+    const y = g.y + Math.sin(g.bounce) * 6;
+
+    // Glow
+    const glow = ctx.createRadialGradient(x, y, 4, x, y, 52);
+    glow.addColorStop(0, 'rgba(255,215,0,0.28)');
+    glow.addColorStop(1, 'rgba(255,215,0,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(x, y, 52, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Box body
+    const bx = x - 24, by = y - 24, bw = 48, bh = 48;
+    ctx.fillStyle = '#e53935';
+    ctx.beginPath();
+    ctx.roundRect(bx, by, bw, bh, 6);
+    ctx.fill();
+
+    // Ribbon horizontal
+    ctx.fillStyle = '#ffd700';
+    ctx.fillRect(bx, y - 6, bw, 12);
+
+    // Ribbon vertical
+    ctx.fillRect(x - 6, by, 12, bh);
+
+    // Bow left
+    ctx.beginPath();
+    ctx.ellipse(x - 11, y - 26, 9, 5, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Bow right
+    ctx.beginPath();
+    ctx.ellipse(x + 11, y - 26, 9, 5, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Bow center
+    ctx.beginPath();
+    ctx.arc(x, y - 24, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Gift number label
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.font = 'bold 13px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`${giftIndex + 1} из 9`, x, y + 40);
+}
+
+// ============================================================
+// SPEECH BUBBLES
+// ============================================================
+const PHRASES = [
+    'Где инфографика?',
+    'Когда будет готово?',
+    'Макарон сломался',
+    'Не приходит смс',
+    'Почему не начислили бонусы?!'
+];
+
+// Меняет фразу у зомби, не повторяя предыдущую
+function nextZombiePhrase(z, offset) {
+    let idx;
+    do { idx = Math.floor(Math.random() * PHRASES.length); }
+    while (idx === z.phraseIdx && PHRASES.length > 1);
+    z.phraseIdx   = idx;
+    z.phrase      = PHRASES[idx];
+    z.phraseTimer = 180 + Math.floor(Math.random() * 120); // 3–5 сек
+    z.phraseAlpha = 1;
+}
+
+function drawZombieBubble(x, y, text, alpha) {
+    if (!text || alpha <= 0) return;
+    const pad = 10, r = 8;
+    ctx.font = 'bold 13px Arial';
+    const tw = ctx.measureText(text).width;
+    const bw = tw + pad * 2;
+    const bh = 30;
+    const bx = x - bw / 2;
+    const by = y - 150; // над головой
+
+    ctx.beginPath();
+    ctx.roundRect(bx, by, bw, bh, r);
+    ctx.fillStyle = `rgba(255,255,255,${alpha * 0.92})`;
+    ctx.fill();
+    ctx.strokeStyle = `rgba(220,50,50,${alpha * 0.8})`;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Хвостик
+    ctx.beginPath();
+    ctx.moveTo(x - 6, by + bh);
+    ctx.lineTo(x + 6, by + bh);
+    ctx.lineTo(x, by + bh + 10);
+    ctx.closePath();
+    ctx.fillStyle = `rgba(255,255,255,${alpha * 0.92})`;
+    ctx.fill();
+
+    ctx.fillStyle = `rgba(180,0,0,${alpha})`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, x, by + bh / 2);
+}
+
+function drawCharacter(x, y, frame) {
+    const legSwing = [0, 14, 0, -14][frame];
+    const armSwing = [0, -13, 0, 13][frame];
+
+    // Shadow
+    ctx.beginPath();
+    ctx.ellipse(x, y + 30, 28, 8, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.fill();
+
+    // Штаны — тёмно-синие
+    ctx.fillStyle = '#283593';
+    ctx.beginPath();
+    ctx.roundRect(x - 24, y - 12, 19, 38 + legSwing, [0, 0, 8, 8]);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.roundRect(x + 5, y - 12, 19, 38 - legSwing, [0, 0, 8, 8]);
+    ctx.fill();
+
+    // Туловище — синяя футболка
+    const bodyGrad = ctx.createLinearGradient(x - 31, y - 76, x + 31, y - 10);
+    bodyGrad.addColorStop(0, '#1565c0');
+    bodyGrad.addColorStop(0.5, '#1e88e5');
+    bodyGrad.addColorStop(1, '#1565c0');
+    ctx.fillStyle = bodyGrad;
+    ctx.beginPath();
+    ctx.roundRect(x - 31, y - 76, 62, 66, 12);
+    ctx.fill();
+
+    // Звёздочки на рубашке
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    [[x - 15, y - 58], [x + 12, y - 48], [x - 5, y - 35], [x + 18, y - 65]].forEach(([sx, sy]) => {
+        ctx.beginPath();
+        for (let i = 0; i < 5; i++) {
+            const a = (i * 4 * Math.PI) / 5 - Math.PI / 2;
+            const r = i % 2 === 0 ? 6 : 2.5;
+            i === 0 ? ctx.moveTo(sx + r * Math.cos(a), sy + r * Math.sin(a))
+                    : ctx.lineTo(sx + r * Math.cos(a), sy + r * Math.sin(a));
+        }
+        ctx.closePath();
+        ctx.fill();
+    });
+
+    // Руки — того же цвета что рубашка
+    ctx.fillStyle = '#1565c0';
+    ctx.beginPath();
+    ctx.roundRect(x - 45, y - 76 + armSwing, 17, 42, 8);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.roundRect(x + 28, y - 76 - armSwing, 17, 42, 8);
+    ctx.fill();
+
+    // Голова — фон
+    ctx.beginPath();
+    ctx.arc(x, y - 112, 36, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffcc80';
+    ctx.fill();
+
+    // Фото Паши
+    if (pashaPicLoaded) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(x, y - 112, 35, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.drawImage(pashaPic, x - 35, y - 147, 70, 70);
+        ctx.restore();
+    } else {
+        ctx.fillStyle = '#ffcc80';
+        ctx.beginPath();
+        ctx.arc(x, y - 112, 36, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#4a3728';
+        ctx.beginPath();
+        ctx.arc(x - 12, y - 118, 5, 0, Math.PI * 2);
+        ctx.arc(x + 12, y - 118, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#4a3728';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(x, y - 104, 13, 0.15, Math.PI - 0.15);
+        ctx.stroke();
+    }
+
+    // Обводка головы
+    ctx.strokeStyle = 'rgba(255,255,255,0.65)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(x, y - 112, 36, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // 🎉 Праздничная шапка-конус
+    ctx.save();
+    ctx.translate(x, y - 148);
+    // Конус
+    const hatGrad = ctx.createLinearGradient(-18, 0, 18, -50);
+    hatGrad.addColorStop(0, '#ffd700');
+    hatGrad.addColorStop(1, '#ffe066');
+    ctx.fillStyle = hatGrad;
+    ctx.beginPath();
+    ctx.moveTo(-18, 0);
+    ctx.lineTo(18, 0);
+    ctx.lineTo(4, -52);
+    ctx.closePath();
+    ctx.fill();
+    // Полосочки на шапке
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 2;
+    for (let i = 1; i <= 3; i++) {
+        const t = i / 4;
+        ctx.beginPath();
+        ctx.moveTo(-18 + t * 22, t * (-52));
+        ctx.lineTo(18 - t * 14, t * (-52));
+        ctx.stroke();
+    }
+    // Помпон на верхушке
+    ctx.beginPath();
+    ctx.arc(4, -52, 6, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    // Резинка шапки
+    ctx.strokeStyle = '#ff6f00';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 2, 19, 0.1, Math.PI - 0.1);
+    ctx.stroke();
+    ctx.restore();
+}
+
+// ============================================================
+// SPLASH BALLOONS
+// ============================================================
+(function createBalloons() {
+    const container = document.getElementById('balloons-container');
+    const colors = ['#ff6b6b','#ffd700','#4ecdc4','#a8e063','#ff9ff3','#74b9ff','#fd79a8'];
+    for (let i = 0; i < 14; i++) {
+        const b = document.createElement('div');
+        b.className = 'balloon';
+        b.style.background         = colors[i % colors.length];
+        b.style.left               = `${(i / 14) * 90 + 3}%`;
+        b.style.animationDuration  = `${8 + Math.random() * 7}s`;
+        b.style.animationDelay     = `${Math.random() * 6}s`;
+        container.appendChild(b);
+    }
+})();
+
+// ============================================================
+// INPUT: KEYBOARD
+// ============================================================
+document.addEventListener('keydown', e => {
+    keys[e.code] = true;
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
+});
+document.addEventListener('keyup', e => { keys[e.code] = false; });
+
+// ============================================================
+// INPUT: JOYSTICK
+// ============================================================
+(function initJoystick() {
+    const base  = document.getElementById('joystick-base');
+    const thumb = document.getElementById('joystick-thumb');
+    if (!base) return;
+
+    const R     = 35; // максимальное смещение стика
+    const DEAD  = 0.25; // мёртвая зона
+    let active  = false;
+    let originX = 0, originY = 0;
+
+    function setThumb(dx, dy) {
+        thumb.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+    }
+
+    function applyDirection(dx, dy) {
+        const len = Math.hypot(dx, dy);
+        const nx  = len > 0 ? dx / len : 0;
+        const ny  = len > 0 ? dy / len : 0;
+        const norm = len / R;
+
+        keys['ArrowLeft']  = nx < -DEAD;
+        keys['ArrowRight'] = nx >  DEAD;
+        keys['ArrowUp']    = ny < -DEAD;
+        keys['ArrowDown']  = ny >  DEAD;
+    }
+
+    function onStart(cx, cy) {
+        const rect = base.getBoundingClientRect();
+        originX = rect.left + rect.width  / 2;
+        originY = rect.top  + rect.height / 2;
+        active  = true;
+        onMove(cx, cy);
+    }
+
+    function onMove(cx, cy) {
+        if (!active) return;
+        let dx = cx - originX;
+        let dy = cy - originY;
+        const len = Math.hypot(dx, dy);
+        if (len > R) { dx = dx / len * R; dy = dy / len * R; }
+        setThumb(dx, dy);
+        applyDirection(dx, dy);
+    }
+
+    function onEnd() {
+        active = false;
+        setThumb(0, 0);
+        keys['ArrowLeft'] = keys['ArrowRight'] = keys['ArrowUp'] = keys['ArrowDown'] = false;
+    }
+
+    base.addEventListener('touchstart', e => {
+        e.preventDefault();
+        const t = e.changedTouches[0];
+        onStart(t.clientX, t.clientY);
+    }, { passive: false });
+
+    base.addEventListener('touchmove', e => {
+        e.preventDefault();
+        const t = e.changedTouches[0];
+        onMove(t.clientX, t.clientY);
+    }, { passive: false });
+
+    base.addEventListener('touchend',   e => { e.preventDefault(); onEnd(); }, { passive: false });
+    base.addEventListener('touchcancel',e => { e.preventDefault(); onEnd(); }, { passive: false });
+
+    // Mouse fallback для теста на ПК
+    base.addEventListener('mousedown', e => onStart(e.clientX, e.clientY));
+    window.addEventListener('mousemove', e => { if (active) onMove(e.clientX, e.clientY); });
+    window.addEventListener('mouseup',   () => { if (active) onEnd(); });
+})();
+
+// ============================================================
+// RESIZE
+// ============================================================
+window.addEventListener('resize', () => {
+    if (document.getElementById('screen-game').style.display === 'block') {
+        W = canvas.width  = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+        generateStars();
+    }
+});
+</script>
+</body>
+</html>
