@@ -664,6 +664,12 @@ function startGame() {
     pashaPic.onload = () => { pashaPicLoaded = true; };
     pashaPic.src = 'assets/pasha.jpg';
 
+    // Предзагрузка всех фото коллег в фоне
+    GIFTS_DATA.forEach(d => {
+        const img = new Image();
+        img.src = d.photo;
+    });
+
     char.x = W / 2;
     char.y = H / 2;
 
