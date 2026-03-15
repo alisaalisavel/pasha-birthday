@@ -1537,13 +1537,17 @@ function drawCharacter(x, y, frame) {
     ctx.fillStyle = '#ffcc80';
     ctx.fill();
 
-    // Фото Паши
+    // Фото Паши (object-fit: cover — без плющения)
     if (pashaPicLoaded) {
         ctx.save();
         ctx.beginPath();
         ctx.arc(x, y - 112, 35, 0, Math.PI * 2);
         ctx.clip();
-        ctx.drawImage(pashaPic, x - 35, y - 147, 70, 70);
+        const pw = pashaPic.naturalWidth, ph = pashaPic.naturalHeight;
+        const scale = Math.max(70 / pw, 70 / ph);
+        const sw = 70 / scale, sh = 70 / scale;
+        const sx = (pw - sw) / 2, sy = (ph - sh) / 2;
+        ctx.drawImage(pashaPic, sx, sy, sw, sh, x - 35, y - 147, 70, 70);
         ctx.restore();
     } else {
         ctx.fillStyle = '#ffcc80';
