@@ -631,6 +631,7 @@ function restartGame() {
     document.querySelectorAll('.gift-dot').forEach(d => d.classList.remove('collected'));
     spawnGift();
     gameRunning = true;
+    lastFrameTime = 0;
     requestAnimationFrame(gameLoop);
 }
 
@@ -678,6 +679,7 @@ function startGame() {
     obstacles  = [];
     spawnGift();
     gameRunning = true;
+    lastFrameTime = 0;
 
     const music = document.getElementById('bg-music');
     music.volume = 0.35;
@@ -738,6 +740,7 @@ function continueGame() {
     } else {
         spawnGift();
         gameRunning = true;
+        lastFrameTime = 0;
         requestAnimationFrame(gameLoop);
     }
 }
@@ -809,14 +812,20 @@ function animateConfetti(cctx, cc) {
 // ============================================================
 // GAME LOOP
 // ============================================================
-function gameLoop() {
+let lastFrameTime = 0;
+const TARGET_FPS = 60;
+const TARGET_FRAME = 1000 / TARGET_FPS;
+
+function gameLoop(timestamp) {
     if (!gameRunning) return;
-    update();
+    const delta = lastFrameTime ? Math.min((timestamp - lastFrameTime) / TARGET_FRAME, 3) : 1;
+    lastFrameTime = timestamp;
+    update(delta);
     draw();
     requestAnimationFrame(gameLoop);
 }
 
-function update() {
+function update(dt = 1) {
     char.vx = 0;
     char.vy = 0;
     if (keys['ArrowLeft']  || keys['KeyA']) char.vx = -CHAR_SPEED;
@@ -830,24 +839,24 @@ function update() {
         char.vy *= 0.7071;
     }
 
-    char.x = Math.max(CHAR_W / 2 + 4, Math.min(W - CHAR_W / 2 - 4, char.x + char.vx));
-    char.y = Math.max(CHAR_H / 2 + 4, Math.min(H - CHAR_H / 2 - 4, char.y + char.vy));
+    char.x = Math.max(CHAR_W / 2 + 4, Math.min(W - CHAR_W / 2 - 4, char.x + char.vx * dt));
+    char.y = Math.max(CHAR_H / 2 + 4, Math.min(H - CHAR_H / 2 - 4, char.y + char.vy * dt));
 
     const moving = char.vx !== 0 || char.vy !== 0;
     if (moving) {
-        char.animTimer++;
+        char.animTimer += dt;
         if (char.animTimer > 9) { char.animTimer = 0; char.animFrame = (char.animFrame + 1) % 4; }
     } else {
         char.animFrame = 0; char.animTimer = 0;
     }
 
-    bgStars.forEach(s => { s.a += s.speed; if (s.a > 1) s.a = 0; });
+    bgStars.forEach(s => { s.a += s.speed * dt; if (s.a > 1) s.a = 0; });
 
-    if (currentGift) currentGift.bounce += 0.06;
+    if (currentGift) currentGift.bounce += 0.06 * dt;
 
     // Particle physics
     particles = particles.filter(p => p.life > 0);
-    particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life -= 2.5; });
+    particles.forEach(p => { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 0.2 * dt; p.life -= 2.5 * dt; });
 
     // Collision: подарок
     if (currentGift) {
@@ -858,16 +867,16 @@ function update() {
     }
 
     // Стулья: движение + отскок + коллизия с персонажем
-    if (invincible > 0) invincible--;
-    if (hitFlash   > 0) hitFlash--;
+    if (invincible > 0) invincible -= dt;
+    if (hitFlash   > 0) hitFlash   -= dt;
     // Обновляем реплики зомби (таймер смены фразы)
-    if (zombie)  { zombie.phraseTimer--;  if (zombie.phraseTimer  <= 0) nextZombiePhrase(zombie,  0); }
-    if (zombie2) { zombie2.phraseTimer--; if (zombie2.phraseTimer <= 0) nextZombiePhrase(zombie2, 1); }
+    if (zombie)  { zombie.phraseTimer  -= dt; if (zombie.phraseTimer  <= 0) nextZombiePhrase(zombie,  0); }
+    if (zombie2) { zombie2.phraseTimer -= dt; if (zombie2.phraseTimer <= 0) nextZombiePhrase(zombie2, 1); }
 
     obstacles.forEach(o => {
-        o.x   += o.vx;
-        o.y   += o.vy;
-        o.rot += o.rotV;
+        o.x   += o.vx   * dt;
+        o.y   += o.vy   * dt;
+        o.rot += o.rotV * dt;
 
         if (o.x < 35)      { o.vx =  Math.abs(o.vx); }
         if (o.x > W - 35)  { o.vx = -Math.abs(o.vx); }
@@ -889,12 +898,12 @@ function update() {
         const dy = char.y - zombie.y;
         const dist = Math.hypot(dx, dy);
         if (dist > 1) {
-            zombie.x += (dx / dist) * ZOMBIE_SPEED;
-            zombie.y += (dy / dist) * ZOMBIE_SPEED;
+            zombie.x += (dx / dist) * ZOMBIE_SPEED * dt;
+            zombie.y += (dy / dist) * ZOMBIE_SPEED * dt;
         }
 
         // Анимация шага
-        zombie.animTimer++;
+        zombie.animTimer += dt;
         if (zombie.animTimer > 14) {
             zombie.animTimer = 0;
             zombie.animFrame = (zombie.animFrame + 1) % 4;
@@ -912,10 +921,10 @@ function update() {
         const dy = char.y - zombie2.y;
         const dist = Math.hypot(dx, dy);
         if (dist > 1) {
-            zombie2.x += (dx / dist) * ZOMBIE2_SPEED;
-            zombie2.y += (dy / dist) * ZOMBIE2_SPEED;
+            zombie2.x += (dx / dist) * ZOMBIE2_SPEED * dt;
+            zombie2.y += (dy / dist) * ZOMBIE2_SPEED * dt;
         }
-        zombie2.animTimer = (zombie2.animTimer || 0) + 1;
+        zombie2.animTimer = (zombie2.animTimer || 0) + dt;
         if (zombie2.animTimer > 12) {
             zombie2.animTimer = 0;
             zombie2.animFrame = (zombie2.animFrame + 1) % 4;
